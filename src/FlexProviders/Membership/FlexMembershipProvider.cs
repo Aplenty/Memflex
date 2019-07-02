@@ -267,7 +267,7 @@ namespace FlexProviders.Membership
 
 			//When we set a password we have used the token so we clear it
 			user.PasswordResetToken = null;
-			user.PasswordResetTokenExpiration = DateTime.MinValue;
+			user.PasswordResetTokenExpiration = new DateTime(2000,1,1); //DateTime.MinValue is not compatible with sql "datetime" so we simply set a date prior to memflex
 
             _userStore.Save(user);
 
