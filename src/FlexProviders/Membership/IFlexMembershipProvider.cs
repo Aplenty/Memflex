@@ -71,13 +71,15 @@ namespace FlexProviders.Membership
         /// <param name="newPassword"> The new password. </param>
         void SetLocalPassword(string username, string newPassword, string license = null);
 
-        /// <summary>
-        ///   Generates the password reset token for a user
-        /// </summary>
-        /// <param name="username"> The username. </param>
-        /// <param name="tokenExpirationInMinutesFromNow"> The token expiration in minutes from now. </param>
-        /// <returns> </returns>
-        string GeneratePasswordResetToken(string username, int tokenExpirationInMinutesFromNow = 1440, string license = null);
+		/// <summary>
+		///   Generates the password reset token for a user
+		/// </summary>
+		/// <param name="username"> The username. </param>
+		/// <param name="tokenExpirationInMinutesFromNow"> The token expiration in minutes from now. </param>
+		/// <param name="license">The license the user belongs to.</param>
+		/// <param name="forceRegeneration">If true a new token will be created with a new end time overwriting (and thus invalidating any previous token). If false a new token is generated when no token is set or current token is expired otherwise the current token is returned. When fetching current token it will adjust the token expiration time but only if the new time would be further into the future.</param>
+		/// <returns> </returns>
+		string GeneratePasswordResetToken(string username, int tokenExpirationInMinutesFromNow = 1440, string license = null, bool forceRegeneration = false);
 
         /// <summary>
         ///   Resets the password for the supplied

@@ -214,8 +214,9 @@ namespace FlexProviders.Membership
 		/// <param name="username"> The username. </param>
 		/// <param name="tokenExpirationInMinutesFromNow"> The token expiration in minutes from now. </param>
 		/// <param name="license">The license the user belongs to.</param>
+		/// <param name="forceRegeneration">If true a new token will be created with a new end time overwriting (and thus invalidating any previous token). If false a new token is generated when no token is set or current token is expired otherwise the current token is returned. When fetching current token it will adjust the token expiration time but only if the new time would be further into the future.</param>
 		/// <returns> </returns>
-		public string GeneratePasswordResetToken(string username, int tokenExpirationInMinutesFromNow = 1440, string license = null)
+		public string GeneratePasswordResetToken(string username, int tokenExpirationInMinutesFromNow = 1440, string license = null, bool forceRegeneration = false)
         {
             TUser user = _userStore.GetUserByUsername(username, license);
             if (user == null)
@@ -223,8 +224,21 @@ namespace FlexProviders.Membership
                 throw new FlexMembershipException(FlexMembershipStatus.InvalidUserName);
             }
 
-            user.PasswordResetToken = GenerateToken();
-            user.PasswordResetTokenExpiration = DateTime.Now.AddMinutes(tokenExpirationInMinutesFromNow);
+			var tokenExpiration = DateTime.UtcNow.AddMinutes(tokenExpirationInMinutesFromNow);
+			string returnToken = null;
+
+			//If we don't have a current token or it's expired we force regeneration (alternatively we can force it anyway)
+			if (forceRegeneration || string.IsNullOrEmpty(user.PasswordResetToken) || user.PasswordResetTokenExpiration < DateTime.UtcNow)
+			{
+				user.PasswordResetToken = GenerateToken();
+				user.PasswordResetTokenExpiration = tokenExpiration;
+			}
+			else if (user.PasswordResetTokenExpiration < tokenExpiration)
+			{
+				//We are going to reuse a token but it would expire earlier than the token we asked for so we extend the expiration time
+				user.PasswordResetTokenExpiration = tokenExpiration;
+			}
+
             _userStore.Save(user);
 
             return user.PasswordResetToken;
@@ -250,6 +264,11 @@ namespace FlexProviders.Membership
                 user.Salt = _encoder.GenerateSalt();
             }
             user.Password = _encoder.Encode(newPassword, user.Salt);
+
+			//When we set a password we have used the token so we clear it
+			user.PasswordResetToken = null;
+			user.PasswordResetTokenExpiration = DateTime.MinValue;
+
             _userStore.Save(user);
 
             return true;

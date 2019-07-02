@@ -96,7 +96,7 @@ namespace FlexProviders.EF
 
         public TUser GetUserByPasswordResetToken(string passwordResetToken)
         {
-            var user = _context.Set<TUser>().SingleOrDefault(u => u.PasswordResetToken == passwordResetToken);
+            var user = _context.Set<TUser>().SingleOrDefault(u => u.PasswordResetToken == passwordResetToken && u.PasswordResetTokenExpiration > DateTime.UtcNow);
             return user;
         }
 
