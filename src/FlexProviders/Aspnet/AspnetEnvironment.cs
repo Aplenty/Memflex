@@ -1,4 +1,5 @@
-﻿using System.Web;
+﻿using System;
+using System.Web;
 using System.Web.Security;
 using DotNetOpenAuth.AspNet;
 using FlexProviders.Membership;
@@ -16,7 +17,27 @@ namespace FlexProviders.Aspnet
         /// <param name="persist"> if set to <c>true</c> [persist]. </param>
         public void IssueAuthTicket(string username, bool persist)
         {
-            FormsAuthentication.SetAuthCookie(username, persist);
+            //FormsAuthentication.SetAuthCookie(username, persist);
+
+
+            var ticketExpiration = DateTime.UtcNow.AddDays(100);
+
+            var authTicket = new FormsAuthenticationTicket(
+                1,
+                username, //User.Identity.Name
+                DateTime.UtcNow,
+                ticketExpiration, //Expiry time
+                persist,
+                string.Empty,
+                FormsAuthentication.FormsCookiePath
+            );
+
+            var encryptedAuthTicket = FormsAuthentication.Encrypt(authTicket);
+
+            var authCookie = new HttpCookie(FormsAuthentication.FormsCookieName, encryptedAuthTicket);
+            authCookie.Expires = ticketExpiration;
+
+            HttpContext.Current.Response.Cookies.Add(authCookie);
         }
 
         /// <summary>
